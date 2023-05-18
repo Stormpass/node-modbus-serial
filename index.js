@@ -409,12 +409,15 @@ function _onReceive(data) {
 
     /* check message CRC
      * if CRC is bad raise an error
+     * TCP 模式下不校验 CRC
      */
-    const crcIn = data.readUInt16LE(data.length - 2);
-    if (crcIn !== crc16(data.slice(0, -2))) {
-        error = "CRC error";
-        next(new Error(error));
-        return;
+    if (!modbus._isModbusTCP) {
+        const crcIn = data.readUInt16LE(data.length - 2);
+        if (crcIn !== crc16(data.slice(0, -2))) {
+            error = "CRC error";
+            next(new Error(error));
+            return;
+        }
     }
 
     // if crc is OK, read address and function code
@@ -575,6 +578,8 @@ class ModbusRTU extends EventEmitter {
 
         this._onReceive = _onReceive.bind(this);
         this._onError = _onError.bind(this);
+
+        this._isModbusTCP = false;
     }
 
     /**
